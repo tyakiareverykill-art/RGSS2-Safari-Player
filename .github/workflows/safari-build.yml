@@ -32,7 +32,7 @@ jobs:
           assert 'static bool mkxpLoadTrace = false;' in s
           s=s.replace('static bool mkxpLoadTrace = false;', 'static bool mkxpLoadTrace = true;')
           s=s.replace('scriptArray = mrb_marshal_load(mrb, rawdata);', 'fprintf(stderr, "[RGSS TRACE] Scripts Marshal begin\\n"); fflush(stderr);\n        scriptArray = mrb_marshal_load(mrb, rawdata);\n        fprintf(stderr, "[RGSS TRACE] Scripts Marshal returned\\n"); fflush(stderr);')
-          s=s.replace('mrb_value rawdata = mrb_str_new_static(mrb, contents, fileHelper.length);', 'fprintf(stderr, "[RGSS TRACE] Scripts bytes=%d header=%02x %02x\\n", fileHelper.length, fileHelper.length>0?(unsigned char)contents[0]:0, fileHelper.length>1?(unsigned char)contents[1]:0); fflush(stderr);\\n        mrb_value rawdata = mrb_str_new(mrb, contents, fileHelper.length);')
+          s=s.replace('mrb_value rawdata = mrb_str_new_static(mrb, contents, fileHelper.length);', 'fprintf(stderr, "[RGSS TRACE] Scripts bytes=%d header=%02x %02x\\n", fileHelper.length, fileHelper.length>0?(unsigned char)contents[0]:0, fileHelper.length>1?(unsigned char)contents[1]:0); fflush(stderr);\n        mrb_value rawdata = mrb_str_new(mrb, contents, fileHelper.length);')
           p.write_text(s)
           PY
       - uses: docker/setup-buildx-action@v3
