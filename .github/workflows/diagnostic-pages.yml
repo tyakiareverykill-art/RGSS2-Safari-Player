@@ -7,7 +7,7 @@ on:
     branches: [main]
   push:
     branches: [main]
-    paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html']
+    paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html', 'docs/mkxpz-test.html']
 permissions:
   contents: read
   actions: read
@@ -46,6 +46,8 @@ jobs:
           test -s site/mkxp.js
           cp docs/engine-test.html site/diagnostic.html
           cp docs/player.html site/index.html
+          cp docs/mkxpz-test.html site/mkxpz-test.html
+          test -s site/mkxpz-test.html
           npm pack fflate@0.8.2 --silent
           tar -xOf fflate-0.8.2.tgz package/umd/index.js > site/fflate.js
           printf '\n;window.RGSSBridge={fs:typeof FS!=="undefined"?FS:Module.FS,main:typeof callMain==="function"?callMain:Module.callMain};\n' >> site/mkxp.js
