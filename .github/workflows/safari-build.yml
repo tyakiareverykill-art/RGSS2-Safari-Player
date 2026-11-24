@@ -1,0 +1,38 @@
+name: Safari experimental build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/safari-build.yml']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Fetch upstream
+        run: git clone --depth 1 https://github.com/Dim145/mkxp-web-jspi.git engine
+      - name: Configure Asyncify
+        working-directory: engine
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('mkxp-web/CMakeLists.txt')
+          s=p.read_text()
+          s,n=re.subn(r'(?m)^SET\(ASYNCIFY .*\)$', 'SET(ASYNCIFY "-s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8388608")',s)
+          assert n==1,n
+          p.write_text(s)
+          PY
+      - name: Build toolchain
+        working-directory: engine
+        run: docker build -t mkxp-web-jspi .
+      - name: Compile
+        working-directory: engine
+        run: docker run --rm -v "$PWD/mkxp-web:/src/mkxp-web" -v "$PWD/build-mkxp.sh:/build-mkxp.sh" mkxp-web-jspi /build-mkxp.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mkxp-engine-asyncify
+          path: |
+            engine/mkxp-web/build/mkxp.wasm
+            engine/mkxp-web/build/mkxp.js
+          if-no-files-found: error
