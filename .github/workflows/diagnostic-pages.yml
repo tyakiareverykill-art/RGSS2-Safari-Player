@@ -1,0 +1,37 @@
+name: Publish engine diagnostic
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diagnostic-pages.yml']
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: mkxp-engine-asyncify
+          run-id: 45385674049
+          github-token: ${{ github.token }}
+          path: site
+      - name: Prepare diagnostic
+        run: |
+          test -s site/mkxp.wasm
+          test -s site/mkxp.js
+          cp docs/engine-test.html site/index.html
+          ls -lh site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
+        id: deployment
