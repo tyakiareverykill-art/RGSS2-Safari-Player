@@ -22,6 +22,11 @@ jobs:
           s,n=re.subn(r'(?m)^SET\(ASYNCIFY .*\)$', 'SET(ASYNCIFY "-s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8388608")',s)
           assert n==1,n
           p.write_text(s)
+          for p in [Path('mkxp-web/CMakeLists.txt'), Path('mkxp-web/extra/build_config.rb')]:
+              s=p.read_text()
+              s,n=re.subn(r'-fwasm-exceptions -s\s*SUPPORT_LONGJMP=wasm', '-fexceptions -sSUPPORT_LONGJMP=emscripten', s)
+              assert n>=1, str(p)
+              p.write_text(s)
           PY
       - name: Build toolchain
         working-directory: engine
