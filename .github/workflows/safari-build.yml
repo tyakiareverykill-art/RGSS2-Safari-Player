@@ -35,9 +35,15 @@ jobs:
           s=s.replace('mrb_value rawdata = mrb_str_new_static(mrb, contents, fileHelper.length);', 'fprintf(stderr, "[RGSS TRACE] Scripts bytes=%d header=%02x %02x\\n", fileHelper.length, fileHelper.length>0?(unsigned char)contents[0]:0, fileHelper.length>1?(unsigned char)contents[1]:0); fflush(stderr);\\n        mrb_value rawdata = mrb_str_new(mrb, contents, fileHelper.length);')
           p.write_text(s)
           PY
-      - name: Build toolchain
-        working-directory: engine
-        run: docker build -t mkxp-web-jspi .
+      - uses: docker/setup-buildx-action@v3
+      - name: Build toolchain with persistent cache
+        uses: docker/build-push-action@v6
+        with:
+          context: engine
+          tags: mkxp-web-jspi:latest
+          load: true
+          cache-from: type=gha,scope=rgss2-toolchain
+          cache-to: type=gha,scope=rgss2-toolchain,mode=max
       - name: Compile
         working-directory: engine
         run: docker run --rm -v "$PWD/mkxp-web:/src/mkxp-web" -v "$PWD/build-mkxp.sh:/build-mkxp.sh" mkxp-web-jspi /build-mkxp.sh
