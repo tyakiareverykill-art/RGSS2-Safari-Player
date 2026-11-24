@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.github/workflows/diagnostic-pages.yml']
+    paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html']
 permissions:
   contents: read
   actions: read
