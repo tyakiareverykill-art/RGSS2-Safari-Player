@@ -27,6 +27,19 @@ jobs:
               s,n=re.subn(r'-fwasm-exceptions -s\s*SUPPORT_LONGJMP=wasm', '-fexceptions -sSUPPORT_LONGJMP=emscripten', s)
               assert n>=1, str(p)
               p.write_text(s)
+          # Enable SDL_image decoders explicitly for both compilation and linking.
+          p=Path('mkxp-web/CMakeLists.txt')
+          s=p.read_text()
+          assert 'USE_SDL_IMAGE=2' in s
+          assert 'SDL2_IMAGE_FORMATS' not in s
+          s=s.replace('USE_SDL_IMAGE=2', 'USE_SDL_IMAGE=2 -sSDL2_IMAGE_FORMATS=png,jpg -sUSE_LIBPNG=1')
+          p.write_text(s)
+          print('SDL_image formats: png,jpg; BMP/GIF/TGA are built-in SDL_image loaders')
+          p=Path('build-mkxp.sh')
+          s=p.read_text()
+          s,n=re.subn(r'(?m)^([ \t]*)(emcmake[ \t]+cmake\b)', r'\1emcc --clear-cache\n\1\2', s, count=1)
+          assert n==1, 'emcmake cmake invocation not found'
+          p.write_text(s)
           p=Path('mkxp-web/binding-mruby/binding-mruby.cpp')
           s=p.read_text()
           assert 'static bool mkxpLoadTrace = false;' in s
