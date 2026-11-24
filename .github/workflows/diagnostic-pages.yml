@@ -1,6 +1,10 @@
 name: Publish engine diagnostic
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ['Safari experimental build']
+    types: [completed]
+    branches: [main]
   push:
     branches: [main]
     paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html']
@@ -11,16 +15,29 @@ permissions:
   id-token: write
 jobs:
   publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Select successful engine build
+        id: engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          id="$TRIGGER_RUN"
+          if [ -z "$id" ]; then
+            id=$(gh run list --workflow safari-build.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          test -n "$id" && test "$id" != null
+          echo "id=$id" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           name: mkxp-engine-asyncify
-          run-id: 45406800572
+          run-id: ${{ steps.engine.outputs.id }}
           github-token: ${{ github.token }}
           path: site
       - name: Prepare diagnostic
