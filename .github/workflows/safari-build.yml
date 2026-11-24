@@ -36,26 +36,26 @@ jobs:
           start=s.index('SDL_rw_file_helper fileHelper;', s.index('std::string readError;'))
           end=s.index('scriptArray = mrb_marshal_load', start)
           s=s[:start]+'''SDL_RWops ops;
-        shState->fileSystem().openReadRaw(ops, scriptPack.c_str());
-        Sint64 size = SDL_RWsize(&ops);
-        if (size <= 0 || size > 268435456) {
-            SDL_RWclose(&ops);
-            showError("Invalid script archive entry size");
-            mrb_close(scriptMrb);
-            return;
-        }
-        std::string bytes((size_t)size, char(0));
-        size_t got = SDL_RWread(&ops, &bytes[0], 1, (size_t)size);
-        SDL_RWclose(&ops);
-        fprintf(stderr, "[RGSS TRACE] PhysFS scripts bytes=%zu expected=%lld\\\\n", got, (long long)size);
-        fflush(stderr);
-        if (got != (size_t)size) {
-            showError("Incomplete script archive read");
-            mrb_close(scriptMrb);
-            return;
-        }
-        mrb_value rawdata = mrb_str_new(mrb, bytes.data(), bytes.size());
-        '''+s[end:]
+          shState->fileSystem().openReadRaw(ops, scriptPack.c_str());
+          Sint64 size = SDL_RWsize(&ops);
+          if (size <= 0 || size > 268435456) {
+              SDL_RWclose(&ops);
+              showError("Invalid script archive entry size");
+              mrb_close(scriptMrb);
+              return;
+          }
+          std::string bytes((size_t)size, char(0));
+          size_t got = SDL_RWread(&ops, &bytes[0], 1, (size_t)size);
+          SDL_RWclose(&ops);
+          fprintf(stderr, "[RGSS TRACE] PhysFS scripts bytes=%zu expected=%lld\\\\n", got, (long long)size);
+          fflush(stderr);
+          if (got != (size_t)size) {
+              showError("Incomplete script archive read");
+              mrb_close(scriptMrb);
+              return;
+          }
+          mrb_value rawdata = mrb_str_new(mrb, bytes.data(), bytes.size());
+          '''+s[end:]
           p.write_text(s)
           PY
       - uses: docker/setup-buildx-action@v3
