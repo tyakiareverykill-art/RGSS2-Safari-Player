@@ -27,6 +27,12 @@ jobs:
               s,n=re.subn(r'-fwasm-exceptions -s\s*SUPPORT_LONGJMP=wasm', '-fexceptions -sSUPPORT_LONGJMP=emscripten', s)
               assert n>=1, str(p)
               p.write_text(s)
+          p=Path('mkxp-web/binding-mruby/binding-mruby.cpp')
+          s=p.read_text()
+          assert 'static bool mkxpLoadTrace = false;' in s
+          s=s.replace('static bool mkxpLoadTrace = false;', 'static bool mkxpLoadTrace = true;')
+          s=s.replace('scriptArray = mrb_marshal_load(mrb, rawdata);', 'fprintf(stderr, "[RGSS TRACE] Scripts Marshal begin\\n"); fflush(stderr);\n        scriptArray = mrb_marshal_load(mrb, rawdata);\n        fprintf(stderr, "[RGSS TRACE] Scripts Marshal returned\\n"); fflush(stderr);')
+          p.write_text(s)
           PY
       - name: Build toolchain
         working-directory: engine
