@@ -8,7 +8,7 @@ $('status').textContent='COI: '+crossOriginIsolated+' / SAB: '+(typeof SharedArr
 $('isolate').onclick=async()=>{try{if(crossOriginIsolated)return;await navigator.serviceWorker.register('./coi-serviceworker.js',{scope:'./'});await navigator.serviceWorker.ready;log('Service worker ready. Reload manually if not controlled.');location.reload()}catch(e){log(e)}};
 let instance, Nostalgist;
 const NativeURL=window.URL;
-window.URL=new Proxy(NativeURL,{construct(target,args,newTarget){try{return Reflect.construct(target,args,newTarget)}catch(e){log('URL failure: '+JSON.stringify(args.map(String))+' / '+String(e));throw e}}});
+window.URL=new Proxy(NativeURL,{construct(target,args,newTarget){try{return Reflect.construct(target,args,newTarget)}catch(e){const name=String(args[0]),base=String(args[1]||'');if(base.startsWith('blob:'+location.origin+'/')&&(name==='.'||/^mkxp[-_]z_libretro\.(js|wasm)$/.test(name))){const resolved=new NativeURL(name==='.'?'./cores/':'./cores/'+name.replace('mkxp-z','mkxp_z'),location.href);log('Worker URL repaired: '+resolved.href);return resolved}log('URL failure: '+JSON.stringify(args.map(String))+' / '+String(e));throw e}}});
 const NativeWorker=window.Worker;
 window.Worker=new Proxy(NativeWorker,{construct(target,args,newTarget){log('Worker URL: '+String(args[0]));return Reflect.construct(target,args,newTarget)}});
 (async()=>{for(const url of ['https://cdn.jsdelivr.net/npm/nostalgist@0.17.0/+esm','https://esm.sh/nostalgist@0.17.0?target=es2022']){try{log('Loading '+url);const m=await import(url);Nostalgist=m.Nostalgist;if(!Nostalgist)throw Error('Missing Nostalgist export');log('Nostalgist loaded');return}catch(e){log('Import failed: '+e)}}log('All library imports failed')})();
