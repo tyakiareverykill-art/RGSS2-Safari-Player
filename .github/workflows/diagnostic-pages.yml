@@ -99,6 +99,20 @@ jobs:
           assert (out/'mkxp_z_libretro.js').stat().st_size > 0
           assert (out/'mkxp_z_libretro.wasm').open('rb').read(4)==b'\\x00asm'
           PY
+      - name: Build optional RTP extractor
+        continue-on-error: true
+        run: |
+          set -eu
+          git clone --depth 1 --branch wasm-main https://github.com/Mobica/innoextract-wasm.git /tmp/inno
+          sed -i 's/INITIAL_MEMORY=1024MB/INITIAL_MEMORY=256MB/g; s/STACK_SIZE=512MB/STACK_SIZE=8MB/g' /tmp/inno/CMakeLists.txt
+          docker build -t rtp-inno-wasm /tmp/inno
+          id=$(docker create rtp-inno-wasm)
+          mkdir -p docs/tools/innoextract site/mkxpz/tools/innoextract
+          docker cp "$id:/root/innoextract/build/innoextract.js" docs/tools/innoextract/
+          docker cp "$id:/root/innoextract/build/innoextract.wasm" docs/tools/innoextract/
+          docker rm "$id"
+          cp /tmp/inno/LICENSE docs/tools/innoextract/
+          cp docs/tools/innoextract/* site/mkxpz/tools/innoextract/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
