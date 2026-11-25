@@ -57,6 +57,17 @@ jobs:
           tar -xOf fflate-0.8.2.tgz package/umd/index.js > site/fflate.js
           printf '\n;window.RGSSBridge={fs:typeof FS!=="undefined"?FS:Module.FS,main:typeof callMain==="function"?callMain:Module.callMain};\n' >> site/mkxp.js
           ls -lh site
+      - name: Prepare Japanese font
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-umeplus fontconfig
+          mkdir -p docs/assets/fonts site/mkxpz/assets/fonts
+          font=$(fc-list -f '%{file}\n' 'UmePlus Gothic' | head -n 1)
+          test -n "$font" && test -s "$font"
+          fc-scan --format '%{family}\n' "$font"
+          cp "$font" docs/assets/fonts/umeplus-gothic.ttf
+          cp /usr/share/doc/fonts-umeplus/copyright docs/assets/fonts/LICENSE.txt
+          cp docs/assets/fonts/* site/mkxpz/assets/fonts/
       - name: Prepare optional mkxp-z core (isolated scope)
         continue-on-error: true
         env:
