@@ -69,6 +69,35 @@ jobs:
           }
           mrb_value rawdata = mrb_str_new(mrb, bytes.data(), bytes.size());
           '''+s[end:]
+          # Safari memory experiment and diagnostics, before embedding Ruby.
+          cm=Path('mkxp-web/CMakeLists.txt')
+          c=cm.read_text()
+          for key,old,new in [('INITIAL_MEMORY','268435456','134217728'),('STACK_SIZE','8388608','2097152'),('ASYNCIFY_STACK_SIZE','8388608','2097152')]:
+              c,n=re.subn(r'(?<![A-Z_])'+key+r'\s*=\s*'+old+r'\b',key+'='+new,c)
+              print('Safari memory',key,'replacements',n)
+              if not n: print('WARNING: setting not found:',key)
+          cm.write_text(c)
+          rp=Path('mkxp-web/binding-mruby/rgss.rb')
+          hook=r'''
+          module Kernel
+            unless method_defined?(:__orig_method_missing_diag__)
+              alias __orig_method_missing_diag__ method_missing
+              def method_missing(sym, *args, &block)
+                if sym == :dispose
+                  begin
+                    puts "[RGSS DIAG] method=#{sym} receiver_class=#{self.class}"
+                    puts "[RGSS DIAG] receiver=#{self.inspect[0..120]}"
+                    puts "[RGSS DIAG] Backtrace: " + caller.join("\\n  ") if respond_to?(:caller, true)
+                  rescue Exception
+                  end
+                end
+                __orig_method_missing_diag__(sym, *args, &block)
+              end
+              private :method_missing
+            end
+          end
+          '''
+          rp.write_text(rp.read_text()+'\n'+hook+'\n')
           # Embed the upstream Ruby definitions; the local ZIP need not contain rgss.rb.
           ruby=Path('mkxp-web/binding-mruby/rgss.rb').read_text()
           assert ')RGSSBASE"' not in ruby
