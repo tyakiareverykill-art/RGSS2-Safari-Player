@@ -34,6 +34,12 @@ async function restoreGameSaves(fs,dir,mkdir){let d;try{d=await dir.getDirectory
 const cloudProtocol = 'rgss2-drive-v1';
 const driveUrl = $('driveUrl');
 try { driveUrl.value = localStorage.getItem(cloudProtocol) || driveUrl.value; } catch (_) {}
+const setup = /^#drive=([A-Za-z0-9_-]{16,200})$/.exec(location.hash);
+if (setup) {
+  driveUrl.value = 'https://script.google.com/macros/s/' + setup[1] + '/exec';
+  driveUrl.closest('details').open = true;
+}
+
 let drive, driveSequence = 0;
 const cloudStatus = message => { $('driveStatus').textContent = message; };
 const sha256 = async value => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', typeof value === 'string' ? new TextEncoder().encode(value) : value)), byte => byte.toString(16).padStart(2,'0')).join('');
