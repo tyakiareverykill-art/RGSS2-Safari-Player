@@ -46,12 +46,45 @@ jobs:
           test -s site/mkxp.js
           cp docs/engine-test.html site/diagnostic.html
           cp docs/player.html site/index.html
-          cp docs/mkxpz-test.html site/mkxpz-test.html
+          mkdir -p site/mkxpz/cores
+          cp docs/mkxpz-test.html site/mkxpz/index.html
+          printf '%s\n' '<meta charset="utf-8"><meta http-equiv="refresh" content="0;url=./mkxpz/"><a href="./mkxpz/">mkxp-z test</a>' > site/mkxpz-test.html
           test -s site/mkxpz-test.html
           npm pack fflate@0.8.2 --silent
           tar -xOf fflate-0.8.2.tgz package/umd/index.js > site/fflate.js
           printf '\n;window.RGSSBridge={fs:typeof FS!=="undefined"?FS:Module.FS,main:typeof callMain==="function"?callMain:Module.callMain};\n' >> site/mkxp.js
           ls -lh site
+      - name: Prepare optional mkxp-z core (isolated scope)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          mkdir -p site/mkxpz/cores
+          curl -fLsS --max-time 60 https://raw.githubusercontent.com/gzuidhof/coi-serviceworker/master/coi-serviceworker.js -o site/mkxpz/coi-serviceworker.js
+          tmp=$(mktemp -d)
+          gh release download v0.1.0 -R zjl4/mkxp-z-libretro-emscripten --dir "$tmp"
+          python3 - "$tmp" <<'PY'
+          import pathlib, sys, tarfile, zipfile
+          root=pathlib.Path(sys.argv[1])
+          out=pathlib.Path('site/mkxpz/cores')
+          def save(name, data):
+              name=pathlib.PurePosixPath(name).name
+              for ext in ('js','wasm'):
+                  if name in ('mkxp-z_libretro.'+ext,'mkxp_z_libretro.'+ext):
+                      (out/('mkxp_z_libretro.'+ext)).write_bytes(data())
+          for p in root.iterdir():
+              if tarfile.is_tarfile(p):
+                  with tarfile.open(p) as t:
+                      for m in t:
+                          if m.isfile(): save(m.name,lambda: t.extractfile(m).read())
+              elif zipfile.is_zipfile(p):
+                  with zipfile.ZipFile(p) as z:
+                      for n in z.namelist(): save(n,lambda: z.read(n))
+              else: save(p.name,p.read_bytes)
+          assert (out/'mkxp_z_libretro.js').stat().st_size > 0
+          assert (out/'mkxp_z_libretro.wasm').open('rb').read(4)==b'\\x00asm'
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
