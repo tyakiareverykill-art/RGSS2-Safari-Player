@@ -98,7 +98,7 @@ jobs:
                       for n in z.namelist(): save(n,lambda: z.read(n))
               else: save(p.name,p.read_bytes)
           assert (out/'mkxp_z_libretro.js').stat().st_size > 0
-          assert (out/'mkxp_z_libretro.wasm').open('rb').read(4)==b'\\x00asm'
+          assert (out/'mkxp_z_libretro.wasm').open('rb').read(4)==bytes([0,97,115,109])
           PY
       - name: Build optional RTP extractor
         continue-on-error: true
@@ -106,7 +106,18 @@ jobs:
           set -eu
           git clone --depth 1 --branch wasm-main https://github.com/Mobica/innoextract-wasm.git /tmp/inno
           sed -i 's/INITIAL_MEMORY=1024MB/INITIAL_MEMORY=256MB/g; s/STACK_SIZE=512MB/STACK_SIZE=8MB/g' /tmp/inno/CMakeLists.txt
-          docker build -t rtp-inno-wasm /tmp/inno
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('/tmp/inno/utils/build_deps.sh')
+          s=p.read_text()
+          s,n=re.subn(r'https?://boostorg\.jfrog\.io/[^\s"\x27]+/boost_1_82_0\.tar\.bz2', 'https://archives.boost.io/release/1.82.0/source/boost_1_82_0.tar.bz2', s)
+          if not n:
+              s,n=re.subn(r'https?://boostorg\.jfrog\.io/artifactory/main/release/', 'https://archives.boost.io/release/', s)
+          assert n, 'Boost URL not found'
+          p.write_text(s)
+          PY
+          docker build --progress=plain -t rtp-inno-wasm /tmp/inno
           id=$(docker create rtp-inno-wasm)
           mkdir -p docs/tools/innoextract site/mkxpz/tools/innoextract
           docker cp "$id:/root/innoextract/build/innoextract.js" docs/tools/innoextract/
