@@ -135,6 +135,13 @@ jobs:
           mkdir -p site/v2
           cp docs/v2/{index.html,io-worker.js,check-scripts.rb,ruby-check.mjs,io-probe.js,io-probe.wasm,physicsfs-license.txt} site/v2/
           bash docs/v2/stage-ruby.sh site/v2/ruby
+          cp docs/v2/{smoke.html,smoke.mjs} site/v2/
+          cp site/mkxpz/coi-serviceworker.js site/v2/
+          python3 docs/v2/make-rgss2-smoke.py site/v2/rgss2-smoke.mkxpz
+          curl -fsSL --retry 3 https://registry.npmjs.org/nostalgist/-/nostalgist-0.20.2.tgz -o "$RUNNER_TEMP/nostalgist.tgz"
+          echo "ad4bc68c01d0d913317575a82ab47b1650ddc782c752880e9314c2683ca0b45f  $RUNNER_TEMP/nostalgist.tgz" | sha256sum -c
+          tar xOzf "$RUNNER_TEMP/nostalgist.tgz" package/dist/nostalgist.js > site/v2/nostalgist.mjs
+          tar xOzf "$RUNNER_TEMP/nostalgist.tgz" package/license > site/v2/nostalgist-license.txt
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
