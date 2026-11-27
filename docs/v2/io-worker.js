@@ -29,10 +29,10 @@ self.onmessage = async ({ data: file }) => {
 
     let phase = 'WORKERFS';
     try {
-      importScripts('./io-probe.js?v=physicsfs-2');
+      importScripts('./io-probe.js?v=rgss2a-1');
       const module = await createIOProbe({
         print: text => postMessage({ text }),
-        locateFile: path => './' + path + '?v=physicsfs-2',
+        locateFile: path => './' + path + '?v=rgss2a-1',
       });
       const ops = module.WORKERFS.stream_ops;
       const read = ops.read;
