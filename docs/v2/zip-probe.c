@@ -1,5 +1,6 @@
 #include "physfs.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -96,6 +97,89 @@ static int inspect_scripts(const char *path) {
     return 1;
 }
 
+/* RGSSAD v1 is the archive format used by RPG Maker VX (.rgss2a). */
+static uint32_t next_key(uint32_t *key) {
+    const uint32_t current = *key;
+    *key = current * 7u + 3u;
+    return current;
+}
+
+static int read_word(PHYSFS_File *file, uint32_t *value) {
+    unsigned char bytes[4];
+    if (PHYSFS_readBytes(file, bytes, sizeof(bytes)) != sizeof(bytes)) return 0;
+    *value = (uint32_t)bytes[0] | ((uint32_t)bytes[1] << 8) |
+             ((uint32_t)bytes[2] << 16) | ((uint32_t)bytes[3] << 24);
+    return 1;
+}
+
+static int inspect_packed_script(PHYSFS_File *file, uint32_t length, uint32_t key) {
+    if (length < 2 || length > SCRIPT_CAP) return 0;
+
+    int marshal_header = 0;
+    uint32_t consumed = 0;
+    while (consumed < length) {
+        const uint32_t remaining = length - consumed;
+        const size_t count = remaining < sizeof(buffer) ? remaining : sizeof(buffer);
+        if (PHYSFS_readBytes(file, buffer, count) != (PHYSFS_sint64)count) return 0;
+
+        uint32_t word_key = 0;
+        for (size_t i = 0; i < count; ++i) {
+            const unsigned shift = (unsigned)(i % 4) * 8;
+            if (!shift) word_key = next_key(&key);
+            buffer[i] = (char)((unsigned char)buffer[i] ^ (unsigned char)(word_key >> shift));
+        }
+        if (!consumed) marshal_header = buffer[0] == 4 && buffer[1] == 8;
+        consumed += (uint32_t)count;
+    }
+    if (!marshal_header) return 0;
+
+    printf("PhysicsFS: Game.rgss2a 内の Scripts 読み込み成功 / %u バイト / Marshal 4.8\n",
+           (unsigned)length);
+    return 1;
+}
+
+static int scan_rgss2a(PHYSFS_File *file, const char *script_path) {
+    char header[8];
+    if (PHYSFS_readBytes(file, header, sizeof(header)) != sizeof(header) ||
+        memcmp(header, "RGSSAD\0\1", sizeof(header))) {
+        puts("PhysicsFS: Game.rgss2a のヘッダーが RGSSAD v1 と一致しません");
+        return 0;
+    }
+    puts("PhysicsFS: Game.rgss2a / RGSSAD v1 を確認");
+
+    const PHYSFS_sint64 end = PHYSFS_fileLength(file);
+    uint32_t key = UINT32_C(0xDEADCAFE);
+    PHYSFS_sint64 position = sizeof(header);
+    while (position >= 0 && position < end) {
+        uint32_t name_length;
+        char name[PATH_CAP];
+        if (!read_word(file, &name_length)) break;
+        name_length ^= next_key(&key);
+        if (!name_length || name_length >= sizeof(name) ||
+            end - position < (PHYSFS_sint64)name_length + 8 ||
+            PHYSFS_readBytes(file, name, name_length) != name_length) break;
+
+        for (uint32_t i = 0; i < name_length; ++i) {
+            name[i] = (char)((unsigned char)name[i] ^ (unsigned char)next_key(&key));
+            if (name[i] == '\\') name[i] = '/';
+        }
+        name[name_length] = '\0';
+
+        uint32_t length;
+        if (!read_word(file, &length)) break;
+        length ^= next_key(&key);
+        position = PHYSFS_tell(file);
+        if (position < 0 || end - position < length) break;
+
+        if (!memchr(name, '\0', name_length) && !strcasecmp(name, script_path)) {
+            return inspect_packed_script(file, length, key);
+        }
+        position += length;
+        if (!PHYSFS_seek(file, (PHYSFS_uint64)position)) break;
+    }
+    return 0;
+}
+
 static int inspect_game(void) {
     char path[PATH_CAP];
     if (!find_game_ini("archive", path, 1)) {
@@ -122,11 +206,15 @@ static int inspect_game(void) {
     char script_path[PATH_CAP];
     if (join_path(script_path, path, scripts) && inspect_scripts(script_path)) return 1;
 
-    if (join_path(script_path, path, "Game.rgss2a") && PHYSFS_exists(script_path)) {
-        puts("PhysicsFS: Game.rgss2a を検出 / RGSS暗号化アーカイブの確認は未対応");
-    } else {
-        puts("PhysicsFS: Scripts の読み込みまたは Marshal ヘッダーの確認に失敗");
+    if (join_path(script_path, path, "Game.rgss2a")) {
+        PHYSFS_File *packed = PHYSFS_openRead(script_path);
+        if (packed) {
+            puts("PhysicsFS: Game.rgss2a 内を検索");
+            const int success = scan_rgss2a(packed, scripts);
+            if (PHYSFS_close(packed) && success) return 1;
+        }
     }
+    puts("PhysicsFS: Scripts の読み込みまたは Marshal ヘッダーの確認に失敗");
     return 0;
 }
 
