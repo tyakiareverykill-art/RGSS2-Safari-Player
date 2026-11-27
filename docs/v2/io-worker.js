@@ -27,12 +27,24 @@ self.onmessage = async ({ data: file }) => {
       new Uint8Array(reader.readAsArrayBuffer(file.slice(offset, offset + length))));
     report('FileReaderSync', baseline);
 
+    let phase = 'WORKERFS';
     try {
-      importScripts('./io-probe.js?v=physicsfs-1');
+      importScripts('./io-probe.js?v=physicsfs-2');
       const module = await createIOProbe({
         print: text => postMessage({ text }),
-        locateFile: path => './' + path + '?v=physicsfs-1',
+        locateFile: path => './' + path + '?v=physicsfs-2',
       });
+      const ops = module.WORKERFS.stream_ops;
+      const read = ops.read;
+      ops.read = function(stream, buffer, offset, length, position) {
+        try {
+          return read.call(this, stream, buffer, offset, length, position);
+        } catch (error) {
+          postMessage({ text: phase + ' 読み取り例外 / 位置 ' + position +
+            ' / 要求 ' + length + ' バイト / ' + error.name + ': ' + error.message });
+          throw error;
+        }
+      };
       module.FS.mkdir('/game');
       module.FS.mount(module.WORKERFS, { blobs: [{ name: 'archive.zip', data: file }] }, '/game');
       try {
@@ -43,6 +55,8 @@ self.onmessage = async ({ data: file }) => {
         if (checksum !== baseline.checksum) throw new Error('チェックサム不一致');
         postMessage({ text: 'WORKERFS 検証成功 / WASMメモリ ' + before + ' → ' +
           module.HEAPU8.buffer.byteLength + ' バイト' });
+        phase = 'PhysicsFS';
+        postMessage({ text: 'PhysicsFS: ZIP の読み取り開始' });
         const zipStart = performance.now();
         const zipOk = module._probe_zip();
         postMessage({ text: 'PhysicsFS 検証' + (zipOk ? '成功' : '未完了') +
@@ -52,7 +66,7 @@ self.onmessage = async ({ data: file }) => {
         module.FS.unmount('/game');
       }
     } catch (error) {
-      postMessage({ text: 'WORKERFS 検証失敗 / ' + error.message });
+      postMessage({ text: phase + ' 検証失敗 / ' + error.name + ': ' + error.message });
     }
 
     try {
@@ -63,7 +77,7 @@ self.onmessage = async ({ data: file }) => {
       try {
         const access = await handle.createSyncAccessHandle();
         try {
-          const expected = new Uint8Array(reader.readAsArrayBuffer(file.slice(0, sampleBytes)));
+          const expected = Uint8Array.from({ length: sampleBytes }, (_, index) => (index * 31) & 255);
           const written = access.write(expected, { at: 0 });
           access.flush();
           const actual = new Uint8Array(expected.length);

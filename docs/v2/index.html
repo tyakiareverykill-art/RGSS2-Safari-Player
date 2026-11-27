@@ -21,6 +21,7 @@
   <script>
     const out = document.getElementById('out');
     const run = document.getElementById('run');
+    const save = document.getElementById('save');
     const logKey = 'rgss-v2-io-probe-log';
     function log(text) {
       out.textContent += text + '\n';
@@ -33,6 +34,11 @@
       if (!file) return log('ファイルを選択してください');
       out.textContent = '';
       run.disabled = true;
+      save.disabled = true;
+      function logVisibility() {
+        log('診断中の画面状態 / ' + document.visibilityState);
+      }
+      document.addEventListener('visibilitychange', logVisibility);
       log(new Date().toISOString() + ' / ' + file.size + ' バイト');
       log('Cross-origin isolation: ' + crossOriginIsolated);
       log('SharedArrayBuffer: ' + typeof SharedArrayBuffer);
@@ -47,17 +53,22 @@
       function stop() {
         clearTimeout(timer);
         worker?.terminate();
+        document.removeEventListener('visibilitychange', logVisibility);
         run.disabled = false;
+        save.disabled = false;
       }
       try {
-        worker = new Worker('./io-worker.js?v=physicsfs-1');
+        worker = new Worker('./io-worker.js?v=physicsfs-2');
         timer = setTimeout(() => {
           log('Worker応答の待機時間を超過');
           stop();
         }, 90000);
         worker.onmessage = ({ data }) => {
           if (data.text) log(data.text);
-          if (data.done) stop();
+          if (data.done) {
+            log('診断終了');
+            stop();
+          }
         };
         worker.onerror = (event) => {
           log('Workerエラー / ' + event.message);
@@ -69,7 +80,7 @@
         stop();
       }
     };
-    document.getElementById('save').onclick = () => {
+    save.onclick = () => {
       const url = URL.createObjectURL(new Blob([out.textContent], { type: 'text/plain' }));
       const link = document.createElement('a');
       link.href = url;
