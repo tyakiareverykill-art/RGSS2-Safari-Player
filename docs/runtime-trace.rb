@@ -1,4 +1,15 @@
 # Diagnostics for the mkxp-z CRuby core. Installed before game scripts.
+# mkxp-z defines RGSS_VERSION only for RGSS3. RGSS1/2 scripts can
+# rely on Ruby 1.8 String inheriting Enumerable#to_a through each_line.
+unless defined?(RGSS_VERSION) || String.method_defined?(:to_a)
+  class String
+    def to_a
+      each_line.to_a
+    end
+  end
+  puts "[RGSS COMPAT] Ruby 1.8 String#to_a enabled"
+end
+
 module SafariTrace
   @last_sample = {}
   @recent = {}
