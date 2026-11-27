@@ -24,9 +24,11 @@ loop do
   if Input.trigger?(Input::C)
     File.open("V2Smoke.rvdata", "wb") { |file| Marshal.dump(position, file) }
     saved = true
+    puts "SMOKE: save #{position}"
   end
   if Input.trigger?(Input::B) && File.exist?("V2Smoke.rvdata")
     position = File.open("V2Smoke.rvdata", "rb") { |file| Marshal.load(file) }
+    puts "SMOKE: load #{position}"
   end
   bitmap = sprite.bitmap
   bitmap.fill_rect(0, 0, 544, 416, Color.new(17, 24, 39))
@@ -36,6 +38,7 @@ loop do
   bitmap.draw_text(16, 80, 512, 28, saved ? "Save written" : "Ready")
   Graphics.update
   frame += 1
+  puts "SMOKE: frame 120" if frame == 120
 end
 '''.lstrip()
 
