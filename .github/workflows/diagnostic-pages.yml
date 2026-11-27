@@ -133,7 +133,7 @@ jobs:
         run: |
           bash docs/v2/build-probe.sh
           mkdir -p site/v2
-          cp docs/v2/{index.html,io-worker.js,io-probe.js,io-probe.wasm} site/v2/
+          cp docs/v2/{index.html,io-worker.js,io-probe.js,io-probe.wasm,physicsfs-license.txt} site/v2/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

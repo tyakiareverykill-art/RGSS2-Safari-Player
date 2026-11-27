@@ -13,7 +13,7 @@
 </head>
 <body>
   <h1>RGSS Safari Player V2</h1>
-  <p>ゲームアーカイブを端末内で部分読み込みする診断です。</p>
+  <p>ゲームZIPの部分読み込みと、Game.ini・スクリプトの読み込みを端末内で確認します。</p>
   <input id="file" type="file" aria-label="ゲームアーカイブ" accept=".zip,.mkxpz">
   <button id="run">診断開始</button>
   <button id="save">ログ保存</button>
@@ -50,7 +50,7 @@
         run.disabled = false;
       }
       try {
-        worker = new Worker('./io-worker.js');
+        worker = new Worker('./io-worker.js?v=physicsfs-1');
         timer = setTimeout(() => {
           log('Worker応答の待機時間を超過');
           stop();

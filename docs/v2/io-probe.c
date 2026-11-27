@@ -16,7 +16,7 @@ int read_sample(FILE *file, off_t offset, size_t length) {
 
 /* Returns -1 on I/O failure, otherwise a checksum comparable to FileReaderSync. */
 int probe_archive(void) {
-    FILE *file = fopen("/game/archive", "rb");
+    FILE *file = fopen("/game/archive.zip", "rb");
     if (!file) return -1;
 
     int checksum = -1;

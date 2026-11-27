@@ -28,10 +28,13 @@ self.onmessage = async ({ data: file }) => {
     report('FileReaderSync', baseline);
 
     try {
-      importScripts('./io-probe.js');
-      const module = await createIOProbe();
+      importScripts('./io-probe.js?v=physicsfs-1');
+      const module = await createIOProbe({
+        print: text => postMessage({ text }),
+        locateFile: path => './' + path + '?v=physicsfs-1',
+      });
       module.FS.mkdir('/game');
-      module.FS.mount(module.WORKERFS, { blobs: [{ name: 'archive', data: file }] }, '/game');
+      module.FS.mount(module.WORKERFS, { blobs: [{ name: 'archive.zip', data: file }] }, '/game');
       try {
         const before = module.HEAPU8.buffer.byteLength;
         const start = performance.now();
@@ -39,6 +42,11 @@ self.onmessage = async ({ data: file }) => {
         report('WASM / WORKERFS', { checksum, milliseconds: performance.now() - start });
         if (checksum !== baseline.checksum) throw new Error('チェックサム不一致');
         postMessage({ text: 'WORKERFS 検証成功 / WASMメモリ ' + before + ' → ' +
+          module.HEAPU8.buffer.byteLength + ' バイト' });
+        const zipStart = performance.now();
+        const zipOk = module._probe_zip();
+        postMessage({ text: 'PhysicsFS 検証' + (zipOk ? '成功' : '未完了') +
+          ' / ' + (performance.now() - zipStart).toFixed(1) + ' ms / WASMメモリ ' +
           module.HEAPU8.buffer.byteLength + ' バイト' });
       } finally {
         module.FS.unmount('/game');
