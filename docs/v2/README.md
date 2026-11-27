@@ -80,9 +80,22 @@ RTP チェックを満たすため、自作の透明画像 1 枚を含むテス�
 PhysicsFS 3.2.0 を固定コミットからビルドし、Worker 内の WORKERFS から
 ZIP をマウントする。ルートまたは直下のフォルダの Game.ini を確認し、
 `[Game]` の `Scripts` が指すファイルを分割して読み、Marshal 4.8 の
-ヘッダーを確認する。対応範囲は ZIP に直接入っているスクリプト。
-Game.rgss2a の中のスクリプトと Ruby の実行はこの診断の対象外。
+ヘッダーを確認する。ZIP に直接入っているスクリプトに加え、下記の Game.rgss2a も確認する。
 
 Chromium 151 で STORE のルート配置、DEFLATE の日本語フォルダ内配置、
 および不正ファイルのエラー表示を確認した。実機の元ZIPでの PhysicsFS
 読み込みは未検証。WORKERFS と OPFS の診断は引き続き個別に出力する。
+
+## Game.rgss2a の読み取り
+
+Game.ini の Scripts が ZIP 内で直接開けないときは、同じ階層の
+Game.rgss2a を RGSSAD v1 として開く。必要なエントリーを探し、64 KiB
+ずつ読み取って Marshal 4.8 のヘッダーを確認する。参照先は
+[mkxp-z の RGSSAD 実装](https://github.com/mkxp-z/mkxp-z/blob/a8f9d9ee331034b7778d0f6c3a5603de8b87388f/src/crypto/rgssad.cpp)。
+Ruby の実行と Marshal オブジェクトの復元はこの診断の対象外。
+
+外伝の元ZIPで ZIP マウント、Game.ini 読み出し、Game.rgss2a の存在、
+OPFS の 64 KiB 往復成功を iPhone Safari の実機ログで確認済み。
+Chrome で自作の RGSSAD v1 データを STORE と DEFLATE の ZIP に格納し、
+76,802 バイトの検査用エントリーの読み取りを確認した。切断、対象欠落、
+別バージョンのアーカイブは検証未完了として表示される。
