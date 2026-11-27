@@ -52,19 +52,20 @@ module SafariTrace
   def self.wrap_asset(owner, method, label)
     return unless owner.method_defined?(method) || owner.private_method_defined?(method)
 
-    wrapper = Module.new do
+    original = owner.instance_method(method)
+    visibility = owner.private_method_defined?(method) ? :private : :public
+    owner.class_eval do
       define_method(method) do |*args, &block|
         token = SafariTrace.begin_asset(label, args.first)
-        result = super(*args, &block)
+        result = original.bind(self).call(*args, &block)
         SafariTrace.end_asset(label, token)
         result
       rescue StandardError => error
         SafariTrace.mark("#{label} exception #{error.class}")
         raise
       end
-      private method if owner.private_method_defined?(method)
+      send(visibility, method)
     end
-    owner.prepend(wrapper)
   end
 end
 
@@ -76,11 +77,11 @@ if defined?(Audio)
   end
 end
 if defined?(Graphics) && Graphics.respond_to?(:update)
-  Graphics.singleton_class.prepend(Module.new do
-    def update(*args, &block)
-      result = super(*args, &block)
-      SafariTrace.after_frame
-      result
-    end
-  end)
+  owner = Graphics.singleton_class
+  original = owner.instance_method(:update)
+  owner.define_method(:update) do |*args, &block|
+    result = original.bind(self).call(*args, &block)
+    SafariTrace.after_frame
+    result
+  end
 end
