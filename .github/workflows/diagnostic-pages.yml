@@ -7,7 +7,7 @@ on:
     branches: [main]
   push:
     branches: [main]
-    paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html', 'docs/mkxpz-test.html', 'docs/rtp-worker.js', 'docs/v2/**']
+    paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html', 'docs/mkxpz-test.html', 'docs/runtime-trace.rb', 'docs/rtp-worker.js', 'docs/v2/**']
 concurrency:
   group: github-pages
   cancel-in-progress: false
@@ -51,7 +51,7 @@ jobs:
           cp docs/player.html site/index.html
           mkdir -p site/mkxpz/cores
           cp docs/mkxpz-test.html site/mkxpz/index.html
-          cp docs/rtp-worker.js site/mkxpz/rtp-worker.js
+          cp docs/rtp-worker.js docs/runtime-trace.rb site/mkxpz/
           printf '%s\n' '<meta charset="utf-8"><meta http-equiv="refresh" content="0;url=./mkxpz/"><a href="./mkxpz/">mkxp-z test</a>' > site/mkxpz-test.html
           test -s site/mkxpz-test.html
           npm pack fflate@0.8.2 --silent
