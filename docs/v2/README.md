@@ -68,7 +68,7 @@ python3 docs/v2/make-rgss2-smoke.py rgss2-smoke.mkxpz
 Chromium の隔離されたローカル環境で公開 V44 と配布コアを実行し、
 作成したゲームの描画と方向キーによる移動を確認した。V44 の起動画面の
 RTP チェックを満たすため、自作の透明画像 1 枚を含むテスト用 ZIP を選択した。
-ゲーム自体には RTP 参照がない。実機、セーブ往復、BGM は未検証。
+ゲーム自体には RTP 参照がない。ゲーム内のセーブ・ロードで保存位置が復元し、V44 の端末保存ログにテスト用セーブが記録された。実機、ブラウザ再起動後のセーブ復元、BGM は未検証。
 
 実行ログ上の CRuby は 3.3.10 (`wasm32-wasip2`)。RetroArch の画面スリープ防止リクエストから
 `NotAllowedError: Wake Lock permission request denied` が出た試行でも描画は開始した。
