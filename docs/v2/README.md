@@ -74,3 +74,15 @@ RTP チェックを満たすため、自作の透明画像 1 枚を含むテス�
 `NotAllowedError: Wake Lock permission request denied` が出た試行でも描画は開始した。
 この API を無効にしたローカル試行では同じ警告が消え、描画とキーボード操作が通った。
 外伝の Safari ログには呼び出し元がなく、同じ例外かどうかは未確認。
+
+## PhysicsFS の ZIP 検証
+
+PhysicsFS 3.2.0 を固定コミットからビルドし、Worker 内の WORKERFS から
+ZIP をマウントする。ルートまたは直下のフォルダの Game.ini を確認し、
+`[Game]` の `Scripts` が指すファイルを分割して読み、Marshal 4.8 の
+ヘッダーを確認する。対応範囲は ZIP に直接入っているスクリプト。
+Game.rgss2a の中のスクリプトと Ruby の実行はこの診断の対象外。
+
+Chromium 151 で STORE のルート配置、DEFLATE の日本語フォルダ内配置、
+および不正ファイルのエラー表示を確認した。実機の元ZIPでの PhysicsFS
+読み込みは未検証。WORKERFS と OPFS の診断は引き続き個別に出力する。
