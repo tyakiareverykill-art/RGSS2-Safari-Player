@@ -7,7 +7,7 @@ on:
     branches: [main]
   push:
     branches: [main]
-    paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html', 'docs/mkxpz-test.html', 'docs/rtp-worker.js']
+    paths: ['.github/workflows/diagnostic-pages.yml', 'docs/player.html', 'docs/engine-test.html', 'docs/mkxpz-test.html', 'docs/rtp-worker.js', 'docs/v2/**']
 concurrency:
   group: github-pages
   cancel-in-progress: false
@@ -125,6 +125,15 @@ jobs:
           docker rm "$id"
           cp /tmp/inno/LICENSE docs/tools/innoextract/
           cp docs/tools/innoextract/* site/mkxpz/tools/innoextract/
+      - name: Set up Emscripten for the V2 diagnostic
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.61
+      - name: Build and stage V2 diagnostic
+        run: |
+          bash docs/v2/build-probe.sh
+          mkdir -p site/v2
+          cp docs/v2/{index.html,io-worker.js,io-probe.js,io-probe.wasm} site/v2/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

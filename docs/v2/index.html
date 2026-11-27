@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RGSS Safari Player V2 診断</title>
+  <style>
+    body { font: 16px system-ui; background: #111827; color: white; padding: 16px; }
+    button, input { font: inherit; margin: 8px 0; }
+    button { min-height: 44px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <h1>RGSS Safari Player V2</h1>
+  <p>ゲームアーカイブを端末内で部分読み込みする診断です。</p>
+  <input id="file" type="file" aria-label="ゲームアーカイブ" accept=".zip,.mkxpz">
+  <button id="run">診断開始</button>
+  <button id="save">ログ保存</button>
+  <pre id="out" aria-live="polite"></pre>
+  <script>
+    const out = document.getElementById('out');
+    const run = document.getElementById('run');
+    const logKey = 'rgss-v2-io-probe-log';
+    function log(text) {
+      out.textContent += text + '\n';
+      try { localStorage.setItem(logKey, out.textContent); } catch {}
+    }
+
+    try { out.textContent = localStorage.getItem(logKey) || ''; } catch {}
+    run.onclick = () => {
+      const file = document.getElementById('file').files[0];
+      if (!file) return log('ファイルを選択してください');
+      out.textContent = '';
+      run.disabled = true;
+      log(new Date().toISOString() + ' / ' + file.size + ' バイト');
+      log('Cross-origin isolation: ' + crossOriginIsolated);
+      log('SharedArrayBuffer: ' + typeof SharedArrayBuffer);
+      log('OffscreenCanvas: ' + typeof OffscreenCanvas);
+      for (const type of ['webgl', 'webgl2']) {
+        const context = document.createElement('canvas').getContext(type);
+        log(type + ': ' + Boolean(context));
+        context?.getExtension('WEBGL_lose_context')?.loseContext();
+      }
+      let worker;
+      let timer;
+      function stop() {
+        clearTimeout(timer);
+        worker?.terminate();
+        run.disabled = false;
+      }
+      try {
+        worker = new Worker('./io-worker.js');
+        timer = setTimeout(() => {
+          log('Worker応答の待機時間を超過');
+          stop();
+        }, 90000);
+        worker.onmessage = ({ data }) => {
+          if (data.text) log(data.text);
+          if (data.done) stop();
+        };
+        worker.onerror = (event) => {
+          log('Workerエラー / ' + event.message);
+          stop();
+        };
+        worker.postMessage(file);
+      } catch (error) {
+        log('Worker起動失敗 / ' + error.message);
+        stop();
+      }
+    };
+    document.getElementById('save').onclick = () => {
+      const url = URL.createObjectURL(new Blob([out.textContent], { type: 'text/plain' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'rgss-v2-diagnostic.txt';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+  </script>
+</body>
+</html>
