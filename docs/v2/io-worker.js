@@ -27,12 +27,13 @@ self.onmessage = async ({ data: file }) => {
       new Uint8Array(reader.readAsArrayBuffer(file.slice(offset, offset + length))));
     report('FileReaderSync', baseline);
 
+    let scripts;
     let phase = 'WORKERFS';
     try {
-      importScripts('./io-probe.js?v=rgss2a-1');
+      importScripts('./io-probe.js?v=ruby-1');
       const module = await createIOProbe({
         print: text => postMessage({ text }),
-        locateFile: path => './' + path + '?v=rgss2a-1',
+        locateFile: path => './' + path + '?v=ruby-1',
       });
       const ops = module.WORKERFS.stream_ops;
       const read = ops.read;
@@ -59,6 +60,8 @@ self.onmessage = async ({ data: file }) => {
         postMessage({ text: 'PhysicsFS: ZIP の読み取り開始' });
         const zipStart = performance.now();
         const zipOk = module._probe_zip();
+        if (zipOk) scripts = module.scriptArchive;
+        delete module.scriptArchive;
         postMessage({ text: 'PhysicsFS 検証' + (zipOk ? '成功' : '未完了') +
           ' / ' + (performance.now() - zipStart).toFixed(1) + ' ms / WASMメモリ ' +
           module.HEAPU8.buffer.byteLength + ' バイト' });
@@ -95,6 +98,11 @@ self.onmessage = async ({ data: file }) => {
       }
     } catch (error) {
       postMessage({ text: 'OPFS 検証失敗 / ' + error.message });
+    }
+    if (scripts) {
+      postMessage({ phase: 'ruby', text: 'CRuby WASM の読み込み開始' });
+      const { checkScripts } = await import('./ruby-check.mjs');
+      await checkScripts(scripts, text => postMessage({ text }));
     }
   } catch (error) {
     postMessage({ text: error.name + ' / ' + error.message });

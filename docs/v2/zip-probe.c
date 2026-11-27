@@ -7,6 +7,16 @@
 
 enum { PATH_CAP = 4096, INI_CAP = 32768, SCRIPT_CAP = 32 * 1024 * 1024 };
 static char ini[INI_CAP + 1];
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+EM_JS(void, retain_script, (const char *data, int offset, int count, int length), {
+    if (!offset) Module['scriptArchive'] = new Uint8Array(length);
+    Module['scriptArchive'].set(HEAPU8.subarray(data, data + count), offset);
+});
+#else
+#define retain_script(data, offset, count, length) ((void)0)
+#endif
+
 static char buffer[65536];
 
 static int join_path(char *out, const char *dir, const char *name) {
@@ -88,6 +98,7 @@ static int inspect_scripts(const char *path) {
     PHYSFS_sint64 bytes;
     while ((bytes = PHYSFS_readBytes(entry, buffer, sizeof(buffer))) > 0) {
         if (!total) marshal_header = bytes >= 2 && buffer[0] == 4 && buffer[1] == 8;
+        if (marshal_header) retain_script(buffer, total, bytes, length);
         total += bytes;
     }
     const int closed = PHYSFS_close(entry);
@@ -129,6 +140,7 @@ static int inspect_packed_script(PHYSFS_File *file, uint32_t length, uint32_t ke
             buffer[i] = (char)((unsigned char)buffer[i] ^ (unsigned char)(word_key >> shift));
         }
         if (!consumed) marshal_header = buffer[0] == 4 && buffer[1] == 8;
+        if (marshal_header) retain_script(buffer, consumed, count, length);
         consumed += (uint32_t)count;
     }
     if (!marshal_header) return 0;

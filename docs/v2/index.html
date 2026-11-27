@@ -58,12 +58,19 @@
         save.disabled = false;
       }
       try {
-        worker = new Worker('./io-worker.js?v=rgss2a-1');
+        worker = new Worker('./io-worker.js?v=ruby-1');
         timer = setTimeout(() => {
           log('Worker応答の待機時間を超過');
           stop();
         }, 90000);
         worker.onmessage = ({ data }) => {
+          if (data.phase === 'ruby') {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+              log('CRuby WASM の待機時間を超過');
+              stop();
+            }, 180000);
+          }
           if (data.text) log(data.text);
           if (data.done) {
             log('診断終了');
