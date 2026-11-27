@@ -58,3 +58,19 @@ WASM の表示値は線形メモリ容量。Safari プロセス全体の使用�
 - 独立 Web 移植候補のローカルビルドは Emscripten 起動と依存ソース取得まで進んだ。
   libsigc++ の構成段階で `mm-common-prepare` が見つからず停止した。
   既存レシピは Docker と Ruby/Rake を使い、今回ビルドできた WASM は I/O 診断のみ。
+
+## 最小 RGSS2 ゲーム
+
+```sh
+python3 docs/v2/make-rgss2-smoke.py rgss2-smoke.mkxpz
+```
+
+Chromium の隔離されたローカル環境で公開 V44 と配布コアを実行し、
+作成したゲームの描画と方向キーによる移動を確認した。V44 の起動画面の
+RTP チェックを満たすため、自作の透明画像 1 枚を含むテスト用 ZIP を選択した。
+ゲーム自体には RTP 参照がない。実機、セーブ往復、BGM は未検証。
+
+実行ログ上の CRuby は 3.3.10 (`wasm32-wasip2`)。RetroArch の画面スリープ防止リクエストから
+`NotAllowedError: Wake Lock permission request denied` が出た試行でも描画は開始した。
+この API を無効にしたローカル試行では同じ警告が消え、描画とキーボード操作が通った。
+外伝の Safari ログには呼び出し元がなく、同じ例外かどうかは未確認。
