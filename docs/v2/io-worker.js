@@ -56,10 +56,10 @@ self.onmessage = async ({ data: file }) => {
         const access = await handle.createSyncAccessHandle();
         try {
           const expected = new Uint8Array(reader.readAsArrayBuffer(file.slice(0, sampleBytes)));
-          const written = access.write(expected);
+          const written = access.write(expected, { at: 0 });
           access.flush();
           const actual = new Uint8Array(expected.length);
-          const count = access.read(actual);
+          const count = access.read(actual, { at: 0 });
           if (written !== expected.length || count !== expected.length ||
               actual.some((byte, index) => byte !== expected[index])) {
             throw new Error('書き込み内容が不一致');
